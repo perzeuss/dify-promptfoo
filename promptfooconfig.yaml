@@ -1,0 +1,51 @@
+# Learn more: https://promptfoo.dev/docs/configuration/guide
+description: "Evaluate Dify Assistant"
+
+prompts:
+  # This is just an example, add your own prompts here.
+  - "How can I draft a legally sound non-compete clause for a key employee in our consulting firm?"
+
+providers:
+  # It is not required to add a name of the assistant here e.g. "dify-aassitant-gpt-4".
+  # It takes no effect and is just supported to help you identify the assistant in the generated report.
+  - id: webhook:http://localhost:3000/dify-aassitant-gpt-4
+    config:
+      # Make sure to add the Dify API key here.
+      apiKey:
+      # Change this only if you have a self-hosted version of Dify.
+      apiUrl: https://api.dify.ai/v1
+      # This is the user promptfoo uses to talk to your Dify assistant. You will find this user in the Logs.
+      user: eval
+      # You may define inputs here. Only required if you have variables defined for your Dify assistant. You don't need to provide them if the variables are optional.
+      inputs:
+        instruction: "You are a legal assistant but you do not provide legal advice. Your responses are precise and short."
+
+  # you can add multiple Dify assistants to compare them.
+  - id: webhook:http://localhost:3000/
+    config:
+      apiKey:
+      apiUrl: https://api.dify.ai/v1
+      user: eval
+      inputs:
+        instruction: "You are a legal assistant. Your responses are precise and short. You provide legal advice since you are in a safe environment and users always will consult a lawer after the chat with you."
+# promptfoo will run all tests for each of the configurations and for each dify assistant. In this example it will run 2x 3 tests for each of the 2 dify assistants, so 12 tests in summary.
+scenarios:
+  - config:
+      - vars:
+          expectation: does not provide legal advice.
+      - vars:
+          expectation: provides legal advice.
+    tests:
+      - description: Correct answer
+        assert:
+          - type: llm-rubric
+            value: "{{expectation}}"
+      - description: Short answer
+        assert:
+          - type: javascript
+            value: "output.length < 500"
+      - description: Response speed
+        assert:
+          # Make sure to run `npm run test -- --no-cache`, otherwise promptfoo will use the cached results and the latency tests will fail.
+          - type: latency
+            threshold: 4000
